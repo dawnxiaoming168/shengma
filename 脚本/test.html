@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>专题结业证书生成器</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "SimSun", serif;
+            background-color: #f0f2f5;
+            padding: 30px;
+            margin: 0;
+        }
+        /* 隐藏预加载文字，强制浏览器提前加载宋体 */
+        .font-preload{
+            font-family:"SimSun";
+            position:absolute;
+            top:-9999px;
+        }
+        .control-panel{
+            background:#ffffff;
+            padding: 24px 28px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            max-width: 1343px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .control-panel label{
+            font-size: 17px;
+            font-weight: 500;
+        }
+        .control-panel input{
+            padding: 8px 12px;
+            font-size: 16px;
+            border: 1px solid #d0d7e3;
+            border-radius: 6px;
+            outline: none;
+            transition: 0.2s;
+        }
+        .control-panel input:focus{
+            border-color:#2b5797;
+        }
+        button{
+            padding: 9px 24px;
+            background:#2b5797;
+            color:white;
+            border:none;
+            border-radius: 6px;
+            cursor:pointer;
+            font-size: 16px;
+            transition: background-color 0.25s;
+        }
+        button:hover{
+            background-color:#204273;
+        }
+        button:disabled{
+            background-color:#708cb8;
+            cursor:not-allowed;
+        }
+        .cert-wrap{
+            position:relative;
+            width:1343px;
+            height:960px;
+            overflow:hidden;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.12);
+            border-radius: 4px;
+        }
+        .bg-img{
+            width: 100%;
+            height: 100%;
+            display:block;
+        }
+        .name{
+            position:absolute;
+            top: 350px;
+            left: 200px;
+            font-size: 38px;
+            font-family:"SimSun",serif;
+            letter-spacing:2px;
+        }
+        .code{
+            position:absolute;
+            top: 585px;
+            left: 345px;
+            font-size: 35px;
+            font-family:"SimSun",serif;
+            letter-spacing:2px;
+        }
+        .valid{
+            position:absolute;
+            top: 630px;
+            left: 300px;
+            font-size: 33px;
+            font-family:"SimSun",serif;
+            letter-spacing:2px;
+        }
+        /*预览弹窗*/
+        .preview-mask{
+            position:fixed;
+            top:0;
+            left:0;
+            width:100vw;
+            height:100vh;
+            background:rgba(0,0,0,0.85);
+            z-index:999;
+            display:none;
+            padding:20px;
+        }
+        .preview-img{
+            max-width:100%;
+            height:auto;
+            margin-top:40px;
+        }
+        .tip{
+            color:#fff;
+            text-align:center;
+            margin-top:15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="font-preload">宋体预加载测试文字</div>
+    <div class="control-panel">
+        <label>姓名：</label>
+        <input type="text" id="inp_name" oninput="refreshPreview()">
+        <label>证书编号：</label>
+        <input type="text" id="inp_code" oninput="refreshPreview()">
+        <label>有效期：</label>
+        <input type="text" id="inp_date" value="2029年4月1日" oninput="refreshPreview()">
+        <button id="exportBtn" onclick="exportImage()">导出证书图片</button>
+    </div>
+    <div class="cert-wrap" id="certContainer">
+        <img class="bg-img" id="bgImage" src="12.png" alt="证书背景">
+        <div class="name" id="text_name"></div>
+        <div class="code" id="text_code"></div>
+        <div class="valid" id="text_valid"></div>
+    </div>
+
+    <div class="preview-mask" id="previewMask" onclick="closePreview()">
+        <img class="preview-img" id="resultImg">
+        <div class="tip">✅长按图片保存到相册，点击空白关闭</div>
+    </div>
+
+    <script>
+        function refreshPreview(){
+            document.getElementById('text_name').innerText = document.getElementById('inp_name').value;
+            document.getElementById('text_code').innerText = document.getElementById('inp_code').value;
+            document.getElementById('text_valid').innerText = document.getElementById('inp_date').value;
+        }
+
+        function waitImageLoad(img){
+            return new Promise((resolve)=>{
+                if(img.complete){
+                    resolve();
+                }else{
+                    img.onload = resolve;
+                }
+            })
+        }
+
+        async function exportImage(){
+            const btn = document.getElementById('exportBtn');
+            btn.disabled = true;
+            btn.innerText = "导出中...";
+            const dom = document.getElementById('certContainer');
+            const bgImg = document.getElementById('bgImage');
+
+            await waitImageLoad(bgImg);
+            await new Promise(resolve=>setTimeout(resolve,500));
+
+            const canvas = await html2canvas(dom,{
+                useCORS:false,
+                allowTaint:false,
+                scale: 2,
+                scrollX: 0,
+                scrollY: 0,
+                letterRendering:true
+            });
+
+            const imgUrl = canvas.toDataURL("image/png");
+            document.getElementById("resultImg").src = imgUrl;
+            document.getElementById("previewMask").style.display = "block";
+
+            btn.disabled = false;
+            btn.innerText = "导出证书图片";
+        }
+
+        function closePreview(){
+            document.getElementById("previewMask").style.display = "none";
+        }
+    </script>
+</body>
+</html>
