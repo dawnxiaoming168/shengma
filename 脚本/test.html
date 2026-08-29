@@ -2,7 +2,6 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>专题结业证书生成器</title>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
@@ -84,7 +83,7 @@
             left: 200px;
             font-size: 38px;
             font-family:"SimSun",serif;
-            letter-spacing:2px;
+            letter-spacing:2px;  /*姓名字间距*/
         }
         .code{
             position:absolute;
@@ -92,7 +91,7 @@
             left: 345px;
             font-size: 35px;
             font-family:"SimSun",serif;
-            letter-spacing:2px;
+            letter-spacing:2px;  /*姓名字间距*/
         }
         .valid{
             position:absolute;
@@ -100,53 +99,32 @@
             left: 300px;
             font-size: 33px;
             font-family:"SimSun",serif;
-            letter-spacing:2px;
-        }
-        /*预览弹窗*/
-        .preview-mask{
-            position:fixed;
-            top:0;
-            left:0;
-            width:100vw;
-            height:100vh;
-            background:rgba(0,0,0,0.85);
-            z-index:999;
-            display:none;
-            padding:20px;
-        }
-        .preview-img{
-            max-width:100%;
-            height:auto;
-            margin-top:40px;
-        }
-        .tip{
-            color:#fff;
-            text-align:center;
-            margin-top:15px;
+            letter-spacing:2px;  /*姓名字间距*/
         }
     </style>
 </head>
 <body>
+    <!-- 预加载宋体文字，解决导出字体丢失 -->
     <div class="font-preload">宋体预加载测试文字</div>
+
     <div class="control-panel">
         <label>姓名：</label>
         <input type="text" id="inp_name" oninput="refreshPreview()">
+
         <label>证书编号：</label>
         <input type="text" id="inp_code" oninput="refreshPreview()">
+
         <label>有效期：</label>
         <input type="text" id="inp_date" value="2029年4月1日" oninput="refreshPreview()">
+
         <button id="exportBtn" onclick="exportImage()">导出证书图片</button>
     </div>
+
     <div class="cert-wrap" id="certContainer">
-        <img class="bg-img" id="bgImage" src="12.png" alt="证书背景">
+        <img class="bg-img" id="bgImage" src="https://dawnxiaoming168.github.io/shengma/%E8%84%9A%E6%9C%AC/12.png" alt="证书背景">
         <div class="name" id="text_name"></div>
         <div class="code" id="text_code"></div>
         <div class="valid" id="text_valid"></div>
-    </div>
-
-    <div class="preview-mask" id="previewMask" onclick="closePreview()">
-        <img class="preview-img" id="resultImg">
-        <div class="tip">✅长按图片保存到相册，点击空白关闭</div>
     </div>
 
     <script>
@@ -156,45 +134,29 @@
             document.getElementById('text_valid').innerText = document.getElementById('inp_date').value;
         }
 
-        function waitImageLoad(img){
-            return new Promise((resolve)=>{
-                if(img.complete){
-                    resolve();
-                }else{
-                    img.onload = resolve;
-                }
-            })
-        }
-
         async function exportImage(){
             const btn = document.getElementById('exportBtn');
             btn.disabled = true;
             btn.innerText = "导出中...";
+
             const dom = document.getElementById('certContainer');
-            const bgImg = document.getElementById('bgImage');
-
-            await waitImageLoad(bgImg);
-            await new Promise(resolve=>setTimeout(resolve,500));
-
+            //导出前延迟300毫秒，等待字体渲染完成
+            await new Promise(resolve=>setTimeout(resolve,300));
             const canvas = await html2canvas(dom,{
-                useCORS:false,
-                allowTaint:false,
-                scale: 2,
+                useCORS:true,
+                allowTaint:true,
+                scale: 1,
                 scrollX: 0,
                 scrollY: 0,
-                letterRendering:true
+                letterRendering:true //开启文字渲染优化
             });
-
-            const imgUrl = canvas.toDataURL("image/png");
-            document.getElementById("resultImg").src = imgUrl;
-            document.getElementById("previewMask").style.display = "block";
+            let link = document.createElement('a');
+            link.download = "结业证书_"+document.getElementById('inp_name').value+".png";
+            link.href = canvas.toDataURL("image/png");
+            link.click();
 
             btn.disabled = false;
             btn.innerText = "导出证书图片";
-        }
-
-        function closePreview(){
-            document.getElementById("previewMask").style.display = "none";
         }
     </script>
 </body>
