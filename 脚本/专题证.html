@@ -5,20 +5,29 @@
     <title>专题结业证书生成器</title>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
+        /* 引入宋体字体文件，字体放在html同目录 */
+        @font-face {
+            font-family: "MySimSun";
+            src: url('simsun.ttc') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
         * {
             box-sizing: border-box;
         }
         body {
-            font-family: "SimSun", serif;
+            font-family: "MySimSun", "SimSun", serif;
             background-color: #f0f2f5;
             padding: 30px;
             margin: 0;
         }
-        /* 隐藏预加载文字，强制浏览器提前加载宋体 */
+        /* 预加载宋体，保证html2canvas渲染 */
         .font-preload{
-            font-family:"SimSun";
+            font-family:"MySimSun";
             position:absolute;
             top:-9999px;
+            visibility:hidden;
         }
         .control-panel{
             background:#ffffff;
@@ -82,79 +91,69 @@
             top: 360px;
             left: 200px;
             font-size: 38px;
-            font-family:"SimSun",serif;
-            letter-spacing:2px;  /*姓名字间距*/
+            font-family:"MySimSun","SimSun",serif;
+            letter-spacing:2px;
         }
         .code{
             position:absolute;
             top: 595px;
             left: 345px;
             font-size: 35px;
-            font-family:"SimSun",serif;
-            letter-spacing:2px;  /*姓名字间距*/
+            font-family:"MySimSun","SimSun",serif;
+            letter-spacing:2px;
         }
         .valid{
             position:absolute;
             top: 640px;
             left: 300px;
             font-size: 33px;
-            font-family:"SimSun",serif;
-            letter-spacing:2px;  /*姓名字间距*/
+            font-family:"MySimSun","SimSun",serif;
+            letter-spacing:2px;
         }
     </style>
 </head>
 <body>
-    <!-- 预加载宋体文字，解决导出字体丢失 -->
     <div class="font-preload">宋体预加载测试文字</div>
-
     <div class="control-panel">
         <label>姓名：</label>
         <input type="text" id="inp_name" oninput="refreshPreview()">
-
         <label>证书编号：</label>
         <input type="text" id="inp_code" oninput="refreshPreview()">
-
         <label>有效期：</label>
         <input type="text" id="inp_date" value="2029年4月1日" oninput="refreshPreview()">
-
         <button id="exportBtn" onclick="exportImage()">导出证书图片</button>
     </div>
-
     <div class="cert-wrap" id="certContainer">
         <img class="bg-img" id="bgImage" src="https://dawnxiaoming168.github.io/shengma/%E8%84%9A%E6%9C%AC/12.png" alt="证书背景">
         <div class="name" id="text_name"></div>
         <div class="code" id="text_code"></div>
         <div class="valid" id="text_valid"></div>
     </div>
-
     <script>
         function refreshPreview(){
             document.getElementById('text_name').innerText = document.getElementById('inp_name').value;
             document.getElementById('text_code').innerText = document.getElementById('inp_code').value;
             document.getElementById('text_valid').innerText = document.getElementById('inp_date').value;
         }
-
         async function exportImage(){
             const btn = document.getElementById('exportBtn');
             btn.disabled = true;
             btn.innerText = "导出中...";
-
             const dom = document.getElementById('certContainer');
-            //导出前延迟300毫秒，等待字体渲染完成
-            await new Promise(resolve=>setTimeout(resolve,300));
+            //延长等待，字体加载完成再导出
+            await new Promise(resolve=>setTimeout(resolve, 800));
             const canvas = await html2canvas(dom,{
                 useCORS:true,
                 allowTaint:true,
                 scale: 1,
                 scrollX: 0,
                 scrollY: 0,
-                letterRendering:true //开启文字渲染优化
+                letterRendering:true
             });
             let link = document.createElement('a');
             link.download = "结业证书_"+document.getElementById('inp_name').value+".png";
             link.href = canvas.toDataURL("image/png");
             link.click();
-
             btn.disabled = false;
             btn.innerText = "导出证书图片";
         }
