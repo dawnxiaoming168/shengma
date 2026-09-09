@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会议室插卡生成器</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", sans-serif;
+        }
+        body {
+            padding: 20px;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        .form-panel {
+            width: 440px;
+        }
+        .form-item {
+            margin-bottom: 14px;
+        }
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        input,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .btn-group {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 9px 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            background: #2563eb;
+            color: #fff;
+        }
+        button.secondary {
+            background: #666;
+        }
+        /* 插卡画布 */
+        .card-wrap {
+            width: 1280px;
+            height: 960px;
+            position: relative;
+            background-image: url("./9.9-2.png");
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            border: 1px solid #333;
+            overflow: hidden;
+        }
+        /* 照片直接像素定位 */
+        .card-photo {
+            position: absolute;
+            left: 45px;
+            top: 100px;
+            width: 593px;
+            height: 760px;
+            object-fit: cover;
+            display: none;
+        }
+        /* 岗位 */
+        .card-post {
+            position: absolute;
+            left: 685px;
+            top: 85px;
+            font-size: 64px;
+            font-weight: bold;
+            color: #222;
+        }
+        /* 姓名 */
+        .card-name {
+            position: absolute;
+            left: 685px;
+            top: 190px;
+            font-size: 70px;
+            color: #222;
+            /* 设置字体为宋体 */
+            font-family: "宋体";
+            font-weight: 300;
+        }
+        /* 模板党员区域白色遮罩 */
+        .party-mask {
+            position: absolute;
+            left: 680px;
+            top: 330px;
+            width: 450px;
+            height: 80px;
+            background: #ffffff;
+            display: none;
+        }
+        /* 简介外层容器【整块简介移动只改这里 left top】 */
+        .intro-list {
+            position: absolute;
+            left: 685px;
+            top: 410px;
+            width: 520px;
+        }
+        /* 单条简介样式，行间距、字号在这里调 */
+        .intro-item {
+            display: flex;
+            align-items: flex-start;
+            font-size: 40px;
+            margin: 6px 0;
+            color: #222;
+        }
+        .intro-dot {
+            color: #d62828;
+            margin-right: 20px;
+            margin-top: -1px;
+        }
+        .intro-line {
+            display: flex;
+            gap: 6px;
+            margin: 8px 0;
+            align-items: center;
+        }
+        .intro-line textarea {
+            flex: 1;
+            height: 60px;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-panel">
+        <h3>信息录入</h3>
+        <div class="form-item">
+            <label>上传人员照片</label>
+            <input type="file" id="imgUpload" accept="image/*">
+        </div>
+        <div class="form-item">
+            <label>岗位（司钻/可自定义）</label>
+            <input id="post" value="司钻:">
+        </div>
+        <div class="form-item">
+            <label>姓名</label>
+            <input id="name" value="孙文空">
+        </div>
+        <div class="form-item">
+            <label>
+                <input type="checkbox" id="isParty" checked> 不是党员，遮住模板党员栏
+            </label>
+        </div>
+        <div class="form-item">
+            <label>简介条目（多条可新增）</label>
+            <div id="introContainer">
+                <div class="intro-line">
+                    <textarea placeholder="2000年9月出生于中国重庆市两江新区" value="2000年9月出生于中国重庆市两江新区"></textarea>
+                    <button class="secondary delIntro" type="button">删除</button>
+                </div>
+            </div>
+            <button type="button" id="addIntro" style="margin-top:8px;">+新增一条简介</button>
+        </div>
+        <div class="btn-group">
+            <button id="renderBtn">实时刷新预览</button>
+            <button id="exportBtn">导出插卡图片</button>
+        </div>
+    </div>
+    <div class="preview-panel">
+        <h3>插卡预览</h3>
+        <div class="card-wrap" id="targetCard">
+            <img class="card-photo" id="previewImg">
+            <div class="card-post" id="text_post"></div>
+            <div class="card-name" id="text_name"></div>
+            <div class="party-mask" id="partyMask"></div>
+            <div class="intro-list" id="introList"></div>
+        </div>
+    </div>
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+$("#addIntro").onclick = () => {
+    const div = document.createElement('div');
+    div.className = "intro-line";
+    div.innerHTML = `
+        <textarea placeholder="填写简介信息"></textarea>
+        <button class="secondary delIntro" type="button">删除</button>
+    `;
+    $("#introContainer").appendChild(div);
+    bindDel();
+};
+function bindDel() {
+    $$(".delIntro").forEach(btn => {
+        btn.onclick = function () {
+            if ($$(".intro-line").length > 1) {
+                this.parentElement.remove();
+            }
+            renderCard();
+        };
+    });
+}
+bindDel();
+$("#imgUpload").addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+        $("#previewImg").src = ev.target.result;
+        $("#previewImg").style.display = "block";
+        renderCard();
+    };
+    reader.readAsDataURL(file);
+});
+function renderCard() {
+    $("#text_post").innerText = $("#post").value;
+    $("#text_name").innerText = $("#name").value;
+    // 不是党员时，用白色矩形遮住模板上的党员区域
+    $("#partyMask").style.display = $("#isParty").checked ? "none" : "block";
+    const listWrap = $("#introList");
+    listWrap.innerHTML = "";
+    $$(".intro-line textarea").forEach(textarea => {
+        const txt = textarea.value.trim();
+        if (!txt) return;
+        const item = document.createElement("div");
+        item.className = "intro-item";
+        item.innerHTML = `<span class="intro-dot">■</span><span>${txt}</span>`;
+        listWrap.appendChild(item);
+    });
+}
+$("#renderBtn").onclick = renderCard;
+["input", "change"].forEach(ev => {
+    $("#post").addEventListener(ev, renderCard);
+    $("#name").addEventListener(ev, renderCard);
+    $("#isParty").addEventListener(ev, renderCard);
+});
+$("#exportBtn").onclick = async () => {
+    const dom = $("#targetCard");
+    const canvas = await html2canvas(dom, { scale: 2, useCORS: true });
+    const a = document.createElement('a');
+    a.download = "会议室插卡.png";
+    a.href = canvas.toDataURL("image/png");
+    a.click();
+};
+renderCard();
+</script>
+</body>
+</html>
